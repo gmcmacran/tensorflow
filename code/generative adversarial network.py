@@ -16,10 +16,13 @@ from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import initializers
+from tensorflow.config import list_physical_devices
 import matplotlib.pyplot as plt
 import numpy as np
 import time
 
+# %%
+list_physical_devices()
 
 # %% Set the seed for reproducible result
 np.random.seed(1000)

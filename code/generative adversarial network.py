@@ -5,32 +5,37 @@
 # clothes that look man made but are actually
 # computer generated.
 #
-# Takes an hour or two to execute on a
-# Nvidia 1070.
+# Takes two hours to execute on a Nvidia 1070.
+# Takes 30 minutes w/ 4070 TI!
 #########################################
 
+# %%
 from tensorflow.keras.datasets import fashion_mnist
 from tensorflow.keras.layers import Input, Dense, Dropout
 from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import initializers
-
+from tensorflow.config import list_physical_devices
 import matplotlib.pyplot as plt
-
 import numpy as np
+import time
 
-# Set the seed for reproducible result
+# %%
+list_physical_devices()
+
+# %% Set the seed for reproducible result
 np.random.seed(1000)
 
+# %%
 randomDim = 10 
 # Load MNIST data
 (X_train, _), (_, _) = fashion_mnist.load_data()
 X_train = (X_train.astype(np.float32) - 127.5)/127.5
 X_train = X_train.reshape(60000, 784)
 
-# Optimizer
-adam = Adam(lr=0.0002, beta_1=0.5)
+# %% Optimizer
+adam = Adam(learning_rate=0.0002, beta_1=0.5)
 
 generator = Sequential()
 generator.add(Dense(256, input_dim=randomDim)) #, kernel_initializer=initializers.RandomNormal(stddev=0.02)))
@@ -42,6 +47,7 @@ generator.add(LeakyReLU(0.2))
 generator.add(Dense(784, activation='tanh'))
 #generator.compile(loss='binary_crossentropy', optimizer=adam)
 
+# %%
 discriminator = Sequential()
 discriminator.add(Dense(1024, input_dim=784, kernel_initializer=initializers.RandomNormal(stddev=0.02)))
 discriminator.add(LeakyReLU(0.2))
@@ -56,7 +62,7 @@ discriminator.add(Dense(1, activation='sigmoid'))
 discriminator.compile(loss='binary_crossentropy', optimizer=adam)
 
 
-# Combined network
+# %%Combined network
 discriminator.trainable = False
 ganInput = Input(shape=(randomDim,))
 x = generator(ganInput)
@@ -67,7 +73,7 @@ gan.compile(loss='binary_crossentropy', optimizer=adam)
 dLosses = []
 gLosses = []
 
-# Plot the loss from each batch
+# %%Plot the loss from each batch
 def plotLoss(epoch):
     plt.figure(figsize=(10, 8))
     plt.plot(dLosses, label='Discriminitive loss')
@@ -76,10 +82,10 @@ def plotLoss(epoch):
     plt.ylabel('Loss')
     plt.legend()
 
-# Create a wall of generated MNIST images
+# %% Create a wall of generated MNIST images
 def printGeneratedImages(epoch, examples=100, dim=(10, 10), figsize=(10, 10)):
     noise = np.random.normal(0, 1, size=[examples, randomDim])
-    generatedImages = generator.predict(noise)
+    generatedImages = generator.predict(noise, verbose = 0)
     generatedImages = generatedImages.reshape(examples, 28, 28)
 
     plt.figure(figsize=figsize)
@@ -89,8 +95,8 @@ def printGeneratedImages(epoch, examples=100, dim=(10, 10), figsize=(10, 10)):
         plt.axis('off')
     plt.tight_layout()
 
-
-def train(epochs=1, batchSize=256):
+# %%
+def train(epochs=1, batchSize=4096):
     batchCount = int(X_train.shape[0] / batchSize)
     print ('Epochs:', epochs)
     print ('Batch size:', batchSize)
@@ -104,7 +110,7 @@ def train(epochs=1, batchSize=256):
             imageBatch = X_train[np.random.randint(0, X_train.shape[0], size=batchSize)]
 
             # Generate fake MNIST images
-            generatedImages = generator.predict(noise)
+            generatedImages = generator.predict(noise, verbose = 0)
             # print np.shape(imageBatch), np.shape(generatedImages)
             X = np.concatenate([imageBatch, generatedImages])
 
@@ -134,5 +140,11 @@ def train(epochs=1, batchSize=256):
     # Plot losses from every epoch
     plotLoss(e)
 
-train(500, 256)
+# %%
+tic = time.perf_counter()
+# train(500, 256) # GPU: 1070
+train(500, 32784) # GPU: 4070 TI!!!
+toc = time.perf_counter()
+print(f"Training time: {(toc - tic)/60:0.0f} minutes and {(toc - tic)%60:0.0f} seconds")
 
+# %%

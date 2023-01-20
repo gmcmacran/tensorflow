@@ -7,19 +7,20 @@
 #
 # Based on Deep Learning with Tensorflow 2
 # and Keras book.
+# https://github.com/PacktPublishing/Deep-Learning-with-TensorFlow-2-and-Keras/blob/master/Chapter%206/DCGAN.ipynb
 #
 # Convergence behavior changes run to run.
 # Sometimes the generated images are great.
-# Sometimes they are not.
+# Sometimes they are not. Setting seeds
+# did not help.
 #
-# With 4070 TI, it takes about 10 min for
-# 5,000 epochs.
+# Takes about 90 seconds for 801 batches 
+# with size 256 on my 4070 Ti.
 #
-# A modification of 
-# https://github.com/PacktPublishing/Deep-Learning-with-TensorFlow-2-and-Keras/blob/master/Chapter%206/DCGAN.ipynb
 #########################################
 
 # %%
+import tensorflow as tf
 from tensorflow.keras.datasets import mnist, fashion_mnist
 from tensorflow.keras.layers import Input, Dense, Reshape, Flatten, Dropout
 from tensorflow.keras.layers import BatchNormalization, Activation, ZeroPadding2D
@@ -31,7 +32,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import time
-from plotnine import ggplot, aes, ggsave
+from plotnine import ggplot, aes, ggsave, labs
 from plotnine import geom_line, geom_hline
 from plotnine import scale_x_continuous, scale_y_continuous
 
@@ -42,7 +43,11 @@ img_cols = 28
 channels = 1
 img_shape = (img_rows, img_cols, channels)
 
-latent_dim = 30
+latent_dim = 10
+
+# %% Set the seed for reproducible result
+np.random.seed(42)
+tf.random.set_seed(1)
 
 # %%
 def build_generator():
@@ -213,7 +218,7 @@ def train(epochs, batch_size=256, save_interval=50):
 
 # %%
 tic = time.perf_counter()
-train(epochs=5000, batch_size=1024, save_interval=200)
+train(epochs=801, batch_size=256, save_interval=100)
 toc = time.perf_counter()
 print(f"Training time: {(toc - tic)/60:0.0f} minutes and {(toc - tic)%60:0.0f} seconds")
 
@@ -226,8 +231,10 @@ DF = DF.melt(id_vars='Epoch', value_vars=['FakeDLoss', 'RealDLoss', 'GLoss'])
 graph = (
     ggplot(DF, aes(x = 'Epoch', y = 'value', color = 'variable', group = 'variable'))
     + geom_line()
-    + scale_x_continuous(breaks = range(0, len(epochs), 400))
-    + geom_hline(yintercept = .15)
+    + scale_x_continuous(breaks = range(0, len(epochs), 100))
+    + scale_y_continuous(breaks = np.arange(0.0, 3.5, .5))
+    + labs(x = 'Epoch', y = 'Binary Crossentropy')
+    + geom_hline(yintercept = .20)
 )
 fn = "s:\\Python\\projects\\tensorflow\\images\\loss_functions.png"
 ggsave(plot = graph, filename = fn, width = 10, height = 10)
@@ -241,58 +248,11 @@ DF = pd.DataFrame(data = data)
 graph = (
     ggplot(DF, aes(x = 'Epoch', y = 'Accuracy'))
     + geom_line()
-    + scale_x_continuous(breaks = range(0, len(epochs), 400))
+    + scale_x_continuous(breaks = range(0, len(epochs), 100))
     + scale_y_continuous(breaks = np.arange(0.0, 1.1, .10), limits = [0.0, 1.0])
 )
 fn = "s:\\Python\\projects\\tensorflow\\images\\accuracy.png"
 ggsave(plot = graph, filename = fn, width = 10, height = 10)
 graph
 
-
 # %%
-lossGraphs = []
-accGraphs = []
-for i in range(0, 10, 1):
-    dLossesFake = []
-    dLossesReal = []
-    gLosses = []
-    accs = []
-
-    train(epochs=5001, batch_size=1024, save_interval=250)
-
-    epochs = list(range(len(dLossesFake)))
-    data = {'Epoch': epochs, 'FakeDLoss': dLossesFake, 'RealDLoss': dLossesReal, 'GLoss': gLosses}
-    DF = pd.DataFrame(data = data)
-    DF = DF.melt(id_vars='Epoch', value_vars=['FakeDLoss', 'RealDLoss', 'GLoss'])
-
-    graph = (
-        ggplot(DF, aes(x = 'Epoch', y = 'value', color = 'variable', group = 'variable'))
-        + geom_line()
-        + scale_x_continuous(breaks = range(0, len(epochs), 500))
-        + geom_hline(yintercept = .20)
-    )
-    fn = "s:\\Python\\projects\\tensorflow\\images\\loss_functions.png"
-    ggsave(plot = graph, filename = fn, width = 10, height = 10)
-    lossGraphs.append(graph)
-
-    epochs = list(range(len(accs)))
-    data = {'Epoch': epochs, 'Accuracy': accs}
-    DF = pd.DataFrame(data = data)
-
-    graph = (
-        ggplot(DF, aes(x = 'Epoch', y = 'Accuracy'))
-        + geom_line()
-        + scale_x_continuous(breaks = range(0, len(epochs), 500))
-        + scale_y_continuous(breaks = np.arange(0.0, 1.1, .10), limits = [0.0, 1.0])
-    )
-    fn = "s:\\Python\\projects\\tensorflow\\images\\accuracy.png"
-    ggsave(plot = graph, filename = fn, width = 10, height = 10)
-    accGraphs.append(graph)
-
-# %%
-for i in range(0, 1, 1):
-    lossGraphs[i]
-
-# %%
-for i in range(1):
-    accGraphs[i]

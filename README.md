@@ -3,4 +3,4 @@ This repo contains examples of deep learning models using [tensoflow](https://ww
 * Regression model with a residual connection on structured data.
 * Convolutional neural network and data augmentation on images.
 * Computer vision using transfer learning.
-* Generative Adversarial Network to create fake images.
+* Two versions of agenerative adversarial network that creates fake images.

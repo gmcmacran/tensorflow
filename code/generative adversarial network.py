@@ -17,6 +17,7 @@ from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import initializers
 from tensorflow.config import list_physical_devices
+from tensorflow.keras import mixed_precision
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -59,7 +60,7 @@ discriminator.add(Dense(256))
 discriminator.add(LeakyReLU(0.2))
 discriminator.add(Dropout(0.3))
 discriminator.add(Dense(1, activation='sigmoid'))
-discriminator.compile(loss='binary_crossentropy', optimizer=adam)
+# discriminator.compile(loss='binary_crossentropy', optimizer=adam)
 
 
 # %%Combined network
@@ -68,7 +69,7 @@ ganInput = Input(shape=(randomDim,))
 x = generator(ganInput)
 ganOutput = discriminator(x)
 gan = Model(inputs=ganInput, outputs=ganOutput)
-gan.compile(loss='binary_crossentropy', optimizer=adam)
+# gan.compile(loss='binary_crossentropy', optimizer=adam)
 
 dLosses = []
 gLosses = []
@@ -121,12 +122,15 @@ def train(epochs=1, batchSize=4096):
 
             # Train discriminator
             discriminator.trainable = True
+            discriminator.compile(loss='binary_crossentropy', optimizer=adam)
             dloss = discriminator.train_on_batch(X, yDis)
 
             # Train generator
             noise = np.random.normal(0, 1, size=[batchSize, randomDim])
             yGen = np.ones(batchSize)
             discriminator.trainable = False
+            discriminator.compile(loss='binary_crossentropy', optimizer=adam)
+            gan.compile(loss='binary_crossentropy', optimizer=adam)
             gloss = gan.train_on_batch(noise, yGen)
 
         # Store loss of most recent batch from this epoch
